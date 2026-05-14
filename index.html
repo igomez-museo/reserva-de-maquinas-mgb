@@ -1,5 +1,115 @@
-<html>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reserva de Máquinas - JLG 45</title>
+    
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- MSAL.js for Authentication -->
+    <script src="https://alcdn.msauth.net/browser/2.30.0/js/msal-browser.min.js"></script>
+    
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <link rel="stylesheet" href="style.css">
+</head>
 <body>
-Hola caracola.
+    <div class="app-container">
+        <!-- Header -->
+        <header class="glass-header">
+            <div class="header-content">
+                <div class="title-area">
+                    <i class="fa-solid fa-truck-ramp-box icon-machine"></i>
+                    <h1>Reservas JLG 45</h1>
+                </div>
+                <div class="auth-area">
+                    <span id="user-info" class="user-info hidden"></span>
+                    <button id="btn-login" class="btn btn-primary">
+                        <i class="fa-brands fa-microsoft"></i> Iniciar Sesión
+                    </button>
+                    <button id="btn-logout" class="btn btn-secondary hidden">
+                        <i class="fa-solid fa-right-from-bracket"></i> Salir
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Toolbar -->
+            <section class="toolbar glass-panel">
+                <div class="date-selector">
+                    <button id="btn-prev-day" class="icon-btn"><i class="fa-solid fa-chevron-left"></i></button>
+                    <input type="date" id="date-picker" class="date-input">
+                    <button id="btn-next-day" class="icon-btn"><i class="fa-solid fa-chevron-right"></i></button>
+                </div>
+                <div class="actions">
+                    <button id="btn-refresh" class="btn btn-icon" title="Actualizar">
+                        <i class="fa-solid fa-rotate-right"></i>
+                    </button>
+                </div>
+            </section>
+
+            <!-- Calendar Area -->
+            <section class="calendar-container glass-panel">
+                <div class="calendar-header">
+                    <h2 id="current-date-display">Cargando...</h2>
+                    <div class="legend">
+                        <span class="legend-item"><span class="color-box free"></span> Libre</span>
+                        <span class="legend-item"><span class="color-box occupied"></span> Ocupado</span>
+                    </div>
+                </div>
+                
+                <div class="timeline" id="timeline">
+                    <!-- Timeline slots will be injected here via JS -->
+                    <div class="loading-spinner">
+                        <i class="fa-solid fa-circle-notch fa-spin"></i> Cargando reservas...
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Modal for new reservation -->
+    <div id="reservation-modal" class="modal-backdrop hidden">
+        <div class="modal-content glass-panel">
+            <div class="modal-header">
+                <h3>Nueva Reserva</h3>
+                <button id="btn-close-modal" class="icon-btn"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body">
+                <form id="reservation-form">
+                    <div class="form-group">
+                        <label for="input-dept">Departamento</label>
+                        <input type="text" id="input-dept" required placeholder="Ej: Mantenimiento Eléctrico">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="input-start">Hora Inicio</label>
+                            <input type="time" id="input-start" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="input-end">Hora Fin</label>
+                            <input type="time" id="input-end" required>
+                        </div>
+                    </div>
+                    <div class="form-group error-message hidden" id="form-error">
+                        La hora de fin debe ser posterior a la de inicio y no puede solaparse con otras reservas.
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button id="btn-cancel" class="btn btn-secondary">Cancelar</button>
+                <button id="btn-save" class="btn btn-primary">Confirmar Reserva</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
 </body>
 </html>
