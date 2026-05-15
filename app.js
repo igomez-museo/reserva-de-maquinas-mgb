@@ -31,7 +31,7 @@ const spConfig = {
 // ==========================================
 // MODO MOCK (Simulación sin conexión a API)
 // Cambia a 'false' cuando configures los IDs reales.
-const MOCK_MODE = true;
+const MOCK_MODE = false;
 // ==========================================
 
 let myMSALObj;
