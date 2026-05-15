@@ -5,8 +5,8 @@
 const msalConfig = {
     auth: {
         // ID de la aplicación registrada en Entra ID (Azure AD)
-        //clientId: "a3428d41-17e3-431d-b1fb-212838d61686",
-        clientId: "TU_CLIENT_ID_AQUI",
+        clientId: "a3428d41-17e3-431d-b1fb-212838d61686",
+        //clientId: "TU_CLIENT_ID_AQUI",
         // URL del tenant (ej: https://login.microsoftonline.com/TU_TENANT_ID)
         authority: "https://login.microsoftonline.com/common",
         redirectUri: window.location.href,
