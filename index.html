@@ -1,23 +1,25 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Reserva de Máquinas - JLG 45</title>
-    
+
     <!-- Google Fonts: Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
+
     <!-- MSAL.js for Authentication -->
     <script src="https://alcdn.msauth.net/browser/2.30.0/js/msal-browser.min.js"></script>
-    
+
     <!-- Font Awesome for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
+
     <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
     <div class="app-container">
         <!-- Header -->
@@ -25,7 +27,13 @@
             <div class="header-content">
                 <div class="title-area">
                     <i class="fa-solid fa-truck-ramp-box icon-machine"></i>
-                    <h1>Reservas JLG 45</h1>
+                    <h1>Selecciona una m&aacute;quina
+                        <!--label for="maquinas">Selecciona una m&aacute;quina</label>-->
+                        <select name="maquinas" id="maquinas">
+                            <option value="JLG 45 Mantenimiento">JLG 45 Mantenimiento</option>
+                            <option value="JLG BOOM Iluminacion">JLG BOOM Iluminaci&oacute;n</option>
+                        </select>
+                    </h1>
                 </div>
                 <div class="auth-area">
                     <span id="user-info" class="user-info hidden"></span>
@@ -64,7 +72,7 @@
                         <span class="legend-item"><span class="color-box occupied"></span> Ocupado</span>
                     </div>
                 </div>
-                
+
                 <div class="timeline" id="timeline">
                     <!-- Timeline slots will be injected here via JS -->
                     <div class="loading-spinner">
@@ -112,4 +120,5 @@
 
     <script src="app.js"></script>
 </body>
+
 </html>
