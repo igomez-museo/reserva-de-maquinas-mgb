@@ -289,24 +289,31 @@ async function loadReservations() {
         const siteResponse = await fetch(`https://graph.microsoft.com/v1.0/sites/${spConfig.siteUrl}:${spConfig.sitePath}`, {
             headers: { 'Authorization': `Bearer ${graphAccessToken}` }
         });
+        
+        if (!siteResponse.ok) {
+            const errText = await siteResponse.text();
+            throw new Error(`Falló al obtener el Sitio (${siteResponse.status}): ${errText}`);
+        }
+        
         const siteData = await siteResponse.json();
         const siteId = siteData.id;
 
         // OBTENER la lista
-        // (Nota: Nombres de columnas internos. Fecha_x0020_ini, Fecha_x0020_fin, Departamento)
         const selectedDate = datePicker.value;
         const nextDate = new Date(currentDate);
         nextDate.setDate(nextDate.getDate() + 1);
         const nextDateStr = nextDate.toISOString().split('T')[0];
 
-        // Filtramos por la fecha seleccionada usando OData en Graph
         const listEndpoint = `https://graph.microsoft.com/v1.0/sites/${siteId}/lists/${spConfig.listName}/items?expand=fields(select=Departamento,Fecha_x0020_ini,Fecha_x0020_fin)&$filter=fields/Fecha_x0020_ini ge '${selectedDate}T00:00:00Z' and fields/Fecha_x0020_ini lt '${nextDateStr}T00:00:00Z'`;
 
         const response = await fetch(listEndpoint, {
             headers: { 'Authorization': `Bearer ${graphAccessToken}` }
         });
 
-        if (!response.ok) throw new Error("Error obteniendo datos");
+        if (!response.ok) {
+            const errText = await response.text();
+            throw new Error(`Falló al obtener la Lista (${response.status}): ${errText}`);
+        }
 
         const data = await response.json();
 
@@ -321,7 +328,7 @@ async function loadReservations() {
         renderTimeline();
     } catch (error) {
         console.error("Error al cargar reservas:", error);
-        timeline.innerHTML = `<div class="error-message">Error cargando datos. Asegúrate de tener permisos o revisa la consola.</div>`;
+        timeline.innerHTML = `<div class="error-message" style="word-break:break-word; max-width:100%; white-space:pre-wrap;"><b>Error detallado de Microsoft:</b><br/><br/>${error.message}</div>`;
     }
 }
 
