@@ -18,7 +18,7 @@ const msalConfig = {
 };
 
 const loginRequest = {
-    scopes: ["Sites.ReadWrite.All", "User.Read"]
+    scopes: ["https://graph.microsoft.com/Sites.ReadWrite.All", "https://graph.microsoft.com/User.Read"]
 };
 
 // Datos de SharePoint (Graph API)
@@ -120,7 +120,14 @@ function signIn() {
     myMSALObj.loginPopup(loginRequest)
         .then(response => {
             showLoggedInView(response.account.username);
-            getToken();
+            graphAccessToken = response.accessToken;
+            initDatePicker();
+            loadReservations();
+
+            // Iniciar autorefresco
+            if (!window.refreshInterval) {
+                window.refreshInterval = setInterval(loadReservations, 60000);
+            }
         })
         .catch(error => {
             console.error(error);
@@ -151,16 +158,19 @@ function getToken() {
             loadReservations();
 
             // Loop de refresco automático cada 60 segundos
-            setInterval(loadReservations, 60000);
+            if (!window.refreshInterval) {
+                window.refreshInterval = setInterval(loadReservations, 60000);
+            }
         })
         .catch(error => {
-            if (error instanceof msal.InteractionRequiredAuthError) {
+            console.error("Silent token failed:", error);
+            if (error instanceof msal.InteractionRequiredAuthError || error.name === "InteractionRequiredAuthError" || error.errorCode === "consent_required") {
                 myMSALObj.acquireTokenPopup(loginRequest)
                     .then(response => {
                         graphAccessToken = response.accessToken;
                         initDatePicker();
                         loadReservations();
-                    });
+                    }).catch(err => console.error("Popup token failed:", err));
             }
         });
 }
@@ -285,16 +295,20 @@ async function loadReservations() {
     }
 
     try {
+        if (!graphAccessToken) {
+            throw new Error("No se ha obtenido el Token de Acceso todavía. Por favor, cierra sesión y vuelve a entrar.");
+        }
+
         // OBTENER el Site ID
         const siteResponse = await fetch(`https://graph.microsoft.com/v1.0/sites/${spConfig.siteUrl}:${spConfig.sitePath}`, {
             headers: { 'Authorization': `Bearer ${graphAccessToken}` }
         });
-        
+
         if (!siteResponse.ok) {
             const errText = await siteResponse.text();
             throw new Error(`Falló al obtener el Sitio (${siteResponse.status}): ${errText}`);
         }
-        
+
         const siteData = await siteResponse.json();
         const siteId = siteData.id;
 
@@ -304,26 +318,49 @@ async function loadReservations() {
         nextDate.setDate(nextDate.getDate() + 1);
         const nextDateStr = nextDate.toISOString().split('T')[0];
 
-        const listEndpoint = `https://graph.microsoft.com/v1.0/sites/${siteId}/lists/${spConfig.listName}/items?expand=fields(select=Departamento,Fecha_x0020_ini,Fecha_x0020_fin)&$filter=fields/Fecha_x0020_ini ge '${selectedDate}T00:00:00Z' and fields/Fecha_x0020_ini lt '${nextDateStr}T00:00:00Z'`;
+        const listEndpoint = `https://graph.microsoft.com/v1.0/sites/${siteId}/lists/${spConfig.listName}/items?expand=fields&$top=999`;
 
         const response = await fetch(listEndpoint, {
             headers: { 'Authorization': `Bearer ${graphAccessToken}` }
         });
 
         if (!response.ok) {
+            if (response.status === 400) {
+                // Diagnosticar nombres de columnas
+                const colsRes = await fetch(`https://graph.microsoft.com/v1.0/sites/${siteId}/lists/${spConfig.listName}/columns`, { headers: { 'Authorization': `Bearer ${graphAccessToken}` } });
+                if (colsRes.ok) {
+                    const colsData = await colsRes.json();
+                    const availableFields = colsData.value.map(c => `• ${c.displayName} -> <b>${c.name}</b>`).join('<br>');
+                    throw new Error(`El nombre de alguna columna es diferente en SharePoint.<br><br><b>Columnas encontradas en tu lista:</b><br>${availableFields}<br><br>Copia este mensaje y pásamelo para que ajuste el código.`);
+                }
+            }
             const errText = await response.text();
             throw new Error(`Falló al obtener la Lista (${response.status}): ${errText}`);
         }
 
         const data = await response.json();
 
-        // Mapear los datos de SharePoint a nuestro modelo interno
-        reservations = data.value.map(item => ({
-            id: item.id,
-            department: item.fields.Departamento,
-            start: item.fields.Fecha_x0020_ini,
-            end: item.fields.Fecha_x0020_fin
-        }));
+        // Mapear los datos de SharePoint a nuestro modelo interno y filtrar localmente
+        reservations = data.value.map(item => {
+            // Buscamos las keys de forma case-insensitive por si Graph API cambia las mayúsculas
+            const f = item.fields;
+            const keys = Object.keys(f);
+            const titleKey = keys.find(k => k.toLowerCase() === 'title') || 'Title';
+            const iniKey = keys.find(k => k.toLowerCase() === 'fechaini') || 'Fechaini';
+            const finKey = keys.find(k => k.toLowerCase() === 'fechafin') || 'Fechafin';
+
+            return {
+                id: item.id,
+                department: f[titleKey] || 'Sin Departamento',
+                start: f[iniKey],
+                end: f[finKey]
+            };
+        }).filter(r => {
+            // Filtramos las reservas del día seleccionado
+            if (!r.start) return false;
+            const rDate = new Date(r.start).toISOString().split('T')[0];
+            return rDate === selectedDate;
+        });
 
         renderTimeline();
     } catch (error) {
@@ -418,9 +455,9 @@ async function saveReservation(e) {
         // Datos para SharePoint
         const payload = {
             fields: {
-                Departamento: dept,
-                Fecha_x0020_ini: startDateTime.toISOString(),
-                Fecha_x0020_fin: endDateTime.toISOString()
+                Title: dept,
+                Fechaini: startDateTime.toISOString(),
+                Fechafin: endDateTime.toISOString()
             }
         };
 
