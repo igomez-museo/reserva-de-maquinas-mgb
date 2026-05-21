@@ -510,25 +510,6 @@ async function saveReservation(e) {
     btnSave.disabled = true;
     btnSave.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Guardando...';
 
-    /*
-    if (MOCK_MODE && !graphAccessToken) {
-        // Simular guardado
-        setTimeout(() => {
-            reservations.push({
-                id: Math.random().toString(),
-                department: dept,
-                start: startDateTime.toISOString(),
-                end: endDateTime.toISOString()
-            });
-            closeModal();
-            renderTimeline();
-            btnSave.disabled = false;
-            btnSave.innerHTML = 'Confirmar Reserva';
-        }, 1000);
-        return;
-    }
-    */
-
     try {
         // Obtener el ID del sitio nuevamente
         const siteResponse = await fetch(`https://graph.microsoft.com/v1.0/sites/${spConfig.siteUrl}:${spConfig.sitePath}`, {
