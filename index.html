@@ -1,3 +1,5 @@
+<!-- editor visual en antigravity: Ctrl-Shift-P -> Antigravity: Open Visual Editor -->
+
 <!DOCTYPE html>
 <html lang="es">
 
@@ -27,11 +29,14 @@
             <div class="header-content">
                 <div class="title-area">
                     <i class="fa-solid fa-truck-ramp-box icon-machine"></i>
-                    <h1>awarenore Selecciona una m&aacute;quina
-                        <!--label for="maquinas">Selecciona una m&aacute;quina</label>-->
-                        <select name="maquinas" id="maquinas">
-                            <option value="JLG 45 Mantenimiento">JLG 45 Mantenimiento</option>
-                            <option value="JLG BOOM Iluminacion">JLG BOOM Iluminaci&oacute;n</option>
+                    <h1>Selecciona departamento y m&aacute;quina:
+                        <select name="Departamentos" id="departamentos">
+                            <!-- el color se obtiene desde el string con un switch más adelante -->
+                            <option value="iluminacion">Iluminaci&oacute;n</option>
+                            <option value="mantenimiento">Mantenimiento</option>
+                            <option value="audiovisuales">Audiovisuales</option>
+                            <option value="seguridad">Seguridad</option>
+                            <option value="informatica">Inform&aacute;tica</option>
                         </select>
                     </h1>
                 </div>
@@ -51,6 +56,10 @@
         <main class="main-content">
             <!-- Toolbar -->
             <section class="toolbar glass-panel">
+                <select name="maquinas" id="maquinas">
+                    <option value="JLG 45 Mantenimiento">JLG 45 Mantenimiento</option>
+                    <option value="JLG Boom iluminación">JLG BOOM iluminaci&oacute;n</option>
+                </select>
                 <div class="date-selector">
                     <button id="btn-prev-day" class="icon-btn"><i class="fa-solid fa-chevron-left"></i></button>
                     <input type="date" id="date-picker" class="date-input">
@@ -94,7 +103,7 @@
                 <form id="reservation-form">
                     <div class="form-group">
                         <label for="input-dept">Departamento</label>
-                        <input type="text" id="input-dept" required placeholder="Ej: Mantenimiento Eléctrico">
+                        <input type="text" id="input-dept" required placeholder="Ej: Mantenimiento" disabled=true>
                     </div>
                     <div class="form-row">
                         <div class="form-group">
