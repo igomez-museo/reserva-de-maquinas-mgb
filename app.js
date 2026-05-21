@@ -40,6 +40,7 @@ let myMSALObj;
 let graphAccessToken = null;
 let currentDate = new Date();
 let reservations = [];
+let selectedReservationDate = "";
 
 // DOM Elements
 // Ig: 
@@ -129,8 +130,8 @@ function setupEventListeners() {
     btnLogin.addEventListener('click', signIn);
     btnLogout.addEventListener('click', signOut);
 
-    btnPrevDay.addEventListener('click', () => changeDate(-1));
-    btnNextDay.addEventListener('click', () => changeDate(1));
+    btnPrevDay.addEventListener('click', () => changeDate(-7));
+    btnNextDay.addEventListener('click', () => changeDate(7));
     datePicker.addEventListener('change', (e) => {
         currentDate = new Date(e.target.value);
         updateDateDisplay();
@@ -233,6 +234,26 @@ function showLoggedInView(username) {
 // ==========================================
 //#region UI LOGIC & CALENDAR
 // ==========================================
+// Helper to get Monday of the week for a given date
+function getStartOfWeek(d) {
+    const date = new Date(d);
+    const day = date.getDay(); // 0 is Sunday, 1 is Monday...
+    const diff = date.getDate() - day + (day === 0 ? -6 : 1);
+    return new Date(date.setDate(diff));
+}
+
+// Helper to get all 7 dates of the week
+function getWeekDates(d) {
+    const monday = getStartOfWeek(d);
+    const dates = [];
+    for (let i = 0; i < 7; i++) {
+        const day = new Date(monday);
+        day.setDate(monday.getDate() + i);
+        dates.push(day);
+    }
+    return dates;
+}
+
 function initDatePicker() {
     const today = new Date();
     datePicker.value = today.toISOString().split('T')[0];
@@ -247,8 +268,20 @@ function changeDate(days) {
 }
 
 function updateDateDisplay() {
-    const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-    currentDateDisplay.textContent = currentDate.toLocaleDateString('es-ES', options);
+    const monday = getStartOfWeek(currentDate);
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    
+    let displayStr = "";
+    if (monday.getMonth() === sunday.getMonth()) {
+        displayStr = `Semana del ${monday.getDate()} al ${sunday.getDate()} de ${monday.toLocaleDateString('es-ES', { month: 'long' })} de ${monday.getFullYear()}`;
+    } else if (monday.getFullYear() === sunday.getFullYear()) {
+        displayStr = `Semana del ${monday.getDate()} de ${monday.toLocaleDateString('es-ES', { month: 'long' })} al ${sunday.getDate()} de ${sunday.toLocaleDateString('es-ES', { month: 'long' })} de ${monday.getFullYear()}`;
+    } else {
+        displayStr = `Semana del ${monday.getDate()} de ${monday.toLocaleDateString('es-ES', { month: 'long' })} de ${monday.getFullYear()} al ${sunday.getDate()} de ${sunday.toLocaleDateString('es-ES', { month: 'long' })} de ${sunday.getFullYear()}`;
+    }
+    
+    currentDateDisplay.textContent = displayStr;
 }
 
 // Asigna un color al dpto indicado
@@ -287,67 +320,99 @@ function getDeptColorClass(deptName) {
 
 }
 
-// Construir la vista de la línea de tiempo (por horas)
+// Construir la vista de la línea de tiempo (por horas, vista semanal)
 function renderTimeline() {
     timeline.innerHTML = '';
 
-    // Configurar horas de trabajo: 06:00 a 22:00
+    const weekDates = getWeekDates(currentDate);
     const startHour = 8;
     const endHour = 20;
 
-    const selectedDateStr = datePicker.value;
+    const todayStr = new Date().toISOString().split('T')[0];
+    const dayNames = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
 
-    for (let h = startHour; h <= endHour; h++) {
-        const hourStr = h.toString().padStart(2, '0') + ':00';
+    weekDates.forEach((date, index) => {
+        const dateStr = date.toISOString().split('T')[0];
+        const isToday = (dateStr === todayStr);
 
-        // Determinar si esta hora está ocupada
-        // Una reserva ocupa la hora si su inicio <= h y su fin > h
-        const overlappingReservation = reservations.find(r => {
-            const rStart = new Date(r.start);
-            const rEnd = new Date(r.end);
+        // Crear columna de día
+        const dayColumn = document.createElement('div');
+        dayColumn.className = `day-column ${isToday ? 'today' : ''}`;
 
-            // Comprobar si la reserva es el mismo día
-            const rDateStr = rStart.toISOString().split('T')[0];
-            if (rDateStr !== selectedDateStr) return false;
+        // Cabecera de la columna
+        const dayHeader = document.createElement('div');
+        dayHeader.className = 'day-header';
 
-            // La lógica simplificada: si la hora evaluada cae dentro de la reserva
-            const slotTime = new Date(`${selectedDateStr}T${hourStr}:00`);
-            return slotTime >= rStart && slotTime < rEnd;
-        });
+        const dayNameSpan = document.createElement('span');
+        dayNameSpan.className = 'day-name';
+        dayNameSpan.textContent = dayNames[index];
 
-        const slot = document.createElement('div');
-        slot.className = `time-slot ${overlappingReservation ? 'occupied' : 'free'}`;
+        const dayDateSpan = document.createElement('span');
+        dayDateSpan.className = 'day-date';
+        // Formato: 21 may
+        const dayDateOptions = { day: 'numeric', month: 'short' };
+        dayDateSpan.textContent = date.toLocaleDateString('es-ES', dayDateOptions);
 
-        const label = document.createElement('div');
-        label.className = 'time-label';
-        label.textContent = hourStr;
+        dayHeader.appendChild(dayNameSpan);
+        dayHeader.appendChild(dayDateSpan);
+        dayColumn.appendChild(dayHeader);
 
-        const content = document.createElement('div');
-        content.className = 'slot-content';
+        // Slots de tiempo para este día
+        const slotsContainer = document.createElement('div');
+        slotsContainer.className = 'day-slots';
 
-        if (overlappingReservation) {
-            const deptClass = getDeptColorClass(overlappingReservation.department);
-            content.classList.add(deptClass);
+        for (let h = startHour; h <= endHour; h++) {
+            const hourStr = h.toString().padStart(2, '0') + ':00';
 
-            const rStartStr = new Date(overlappingReservation.start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            const rEndStr = new Date(overlappingReservation.end).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            // Determinar si esta hora está ocupada
+            const overlappingReservation = reservations.find(r => {
+                const rStart = new Date(r.start);
+                const rEnd = new Date(r.end);
 
-            content.innerHTML = `
-                <div class="reservation-details">
-                    <span class="dept-name">${overlappingReservation.department}</span>
-                    <!--span class="time-range">${rStartStr} - ${rEndStr}</span-->
-                </div>
-                <i class="fa-solid fa-lock"></i>
-            `;
-        } else {
-            // Permitir clic para reservar si está libre
-            slot.addEventListener('click', () => openModal(hourStr));
+                const rDateStr = rStart.toISOString().split('T')[0];
+                if (rDateStr !== dateStr) return false;
+
+                const slotTime = new Date(`${dateStr}T${hourStr}:00`);
+                return slotTime >= rStart && slotTime < rEnd;
+            });
+
+            const slot = document.createElement('div');
+            slot.className = `time-slot ${overlappingReservation ? 'occupied' : 'free'}`;
+
+            const label = document.createElement('span');
+            label.className = 'slot-hour';
+            label.textContent = hourStr;
+            slot.appendChild(label);
+
+            if (overlappingReservation) {
+                const deptClass = getDeptColorClass(overlappingReservation.department);
+                slot.classList.add(deptClass);
+
+                const deptSpan = document.createElement('span');
+                deptSpan.className = 'slot-dept';
+                deptSpan.textContent = overlappingReservation.department;
+                slot.appendChild(deptSpan);
+
+                // Tooltip con detalles completos
+                const rStartStr = new Date(overlappingReservation.start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                const rEndStr = new Date(overlappingReservation.end).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                slot.title = `${overlappingReservation.department} (${rStartStr} - ${rEndStr})`;
+            } else {
+                const statusSpan = document.createElement('span');
+                statusSpan.className = 'slot-status';
+                statusSpan.textContent = 'Libre';
+                slot.appendChild(statusSpan);
+
+                // Permitir clic para reservar si está libre
+                slot.addEventListener('click', () => openModal(dateStr, hourStr));
+            }
+
+            slotsContainer.appendChild(slot);
         }
 
-        slot.appendChild(label);
-        slot.appendChild(content);
-        timeline.appendChild(slot);
-    }
+        dayColumn.appendChild(slotsContainer);
+        timeline.appendChild(dayColumn);
+    });
 }
 
 //#endregion
@@ -423,6 +488,9 @@ async function loadReservations() {
         const data = await response.json();
 
         // Mapear los datos de SharePoint a nuestro modelo interno y filtrar localmente
+        const weekDates = getWeekDates(currentDate);
+        const weekDateStrings = weekDates.map(d => d.toISOString().split('T')[0]);
+
         reservations = data.value.map(item => {
             // Buscamos las keys de forma case-insensitive por si Graph API cambia las mayúsculas <- LOL
             const f = item.fields;
@@ -438,10 +506,10 @@ async function loadReservations() {
                 end: f[finKey]
             };
         }).filter(r => {
-            // Filtramos las reservas del día seleccionado
+            // Filtramos las reservas que correspondan a la semana actual
             if (!r.start) return false;
             const rDate = new Date(r.start).toISOString().split('T')[0];
-            return rDate === selectedDate;
+            return weekDateStrings.includes(rDate);
         });
 
         renderTimeline();
@@ -454,7 +522,8 @@ async function loadReservations() {
 // ==========================================
 //#region MODAL LOGIC
 // ==========================================
-function openModal(startHourStr) {
+function openModal(dateStr, startHourStr) {
+    selectedReservationDate = dateStr;
     inputStart.value = startHourStr;
 
     // Default end time: start time + 1 hour
@@ -485,7 +554,7 @@ function checkOverlap(newStart, newEnd) {
 async function saveReservation(e) {
     e.preventDefault();
 
-    const selectedDate = datePicker.value;
+    const selectedDate = selectedReservationDate;
     const startStr = inputStart.value;
     const endStr = inputEnd.value;
     const dept = inputDept.value.trim();

@@ -245,89 +245,139 @@ h1 {
     background-color: var(--text-secondary);
 }
 
-/* Timeline */
+/* Timeline Week View Grid */
 .timeline {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 0.75rem;
+    width: 100%;
+}
+
+@media (max-width: 1024px) {
+    .timeline {
+        grid-template-columns: repeat(7, 180px);
+        overflow-x: auto;
+        padding-bottom: 1rem;
+    }
+}
+
+/* Day Column */
+.day-column {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 12px;
+    padding: 1rem 0.6rem;
+    border: 1px solid var(--glass-border);
+    transition: all 0.3s ease;
+}
+
+.day-column.today {
+    background: rgba(59, 130, 246, 0.08);
+    border: 1px solid rgba(59, 130, 246, 0.35);
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.15);
+}
+
+.day-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 0.75rem;
+    margin-bottom: 0.25rem;
+}
+
+.day-column.today .day-header {
+    border-bottom: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.day-name {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.day-column.today .day-name {
+    color: var(--accent-color);
+}
+
+.day-date {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-top: 0.2rem;
+}
+
+.day-slots {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
 }
 
+/* Compact Time Slots */
 .time-slot {
     display: flex;
-    align-items: stretch;
-    height: 60px;
-    border-radius: 8px;
-    overflow: hidden;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.time-label {
-    width: 80px;
-    display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
-    background-color: rgba(0, 0, 0, 0.2);
-    font-size: 0.9rem;
-    font-weight: 500;
-    color: var(--text-secondary);
-    border-right: 1px solid var(--border-color);
-}
-
-.slot-content {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    padding: 0 1.5rem;
-    position: relative;
+    padding: 0.4rem;
+    height: 52px;
+    border-radius: 8px;
+    transition: all 0.2s ease;
     cursor: pointer;
+    font-size: 0.8rem;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
 }
 
-/* Statuses */
-.time-slot.free .slot-content {
+.time-slot.free {
     background-color: var(--slot-free-bg);
-    border: 1px solid transparent;
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
 }
 
-.time-slot.free:hover .slot-content {
+.time-slot.free:hover {
     background-color: var(--slot-free-hover);
     border: 1px dashed var(--accent-color);
-}
-
-.time-slot.free .slot-content::after {
-    content: "Haga clic para reservar";
-    opacity: 0;
     color: var(--accent-color);
-    font-size: 0.9rem;
-    transition: opacity 0.2s ease;
-}
-
-.time-slot.free:hover .slot-content::after {
-    opacity: 1;
+    transform: translateY(-1px);
 }
 
 .time-slot.occupied {
     cursor: not-allowed;
-}
-
-.time-slot.occupied .slot-content {
-    background-color: var(--slot-occupied-bg);
     color: white;
-    justify-content: space-between;
+    font-weight: 500;
+    border: 1px solid transparent;
 }
 
-.reservation-details {
-    display: flex;
-    flex-direction: column;
-}
-
-.dept-name {
+.slot-hour {
+    font-size: 0.75rem;
     font-weight: 600;
-    font-size: 1rem;
+    opacity: 0.85;
 }
 
-.time-range {
-    font-size: 0.8rem;
-    opacity: 0.8;
+.time-slot.free .slot-status {
+    font-size: 0.65rem;
+    opacity: 0.5;
+    margin-top: 0.1rem;
+}
+
+.time-slot.free:hover .slot-status {
+    opacity: 0.9;
+}
+
+.time-slot.occupied .slot-dept {
+    font-size: 0.7rem;
+    font-weight: 700;
+    margin-top: 0.1rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    width: 100%;
+    padding: 0 0.15rem;
 }
 
 /* Modal */
