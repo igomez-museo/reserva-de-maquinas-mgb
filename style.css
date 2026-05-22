@@ -550,3 +550,35 @@ select {
         background-color: #94a3b8;
     }
 }
+
+/* Notification Banner */
+.notification-banner {
+    background-color: rgba(239, 68, 68, 0.95);
+    color: white;
+    padding: 1rem 1.5rem;
+    border-radius: 12px;
+    margin: 1.5rem auto 0.5rem auto;
+    width: calc(100% - 4rem);
+    max-width: 1200px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: 500;
+    box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    animation: slideDown 0.3s ease;
+    z-index: 999;
+}
+
+@keyframes slideDown {
+    from {
+        transform: translateY(-10px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}

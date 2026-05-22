@@ -239,6 +239,106 @@ function getWeekDates(d) {
     return dates;
 }
 
+// Busca reservas solapadas en la misma semana/día
+function findConflicts(resList) {
+    const conflicts = [];
+    for (let i = 0; i < resList.length; i++) {
+        for (let j = i + 1; j < resList.length; j++) {
+            const r1 = resList[i];
+            const r2 = resList[j];
+
+            const start1 = new Date(r1.start);
+            const end1 = new Date(r1.end);
+            const start2 = new Date(r2.start);
+            const end2 = new Date(r2.end);
+
+            // Si se solapan en tiempo (comenzando o terminando en el mismo rango)
+            if (start1 < end2 && start2 < end1) {
+                conflicts.push({ r1, r2 });
+            }
+        }
+    }
+    return conflicts;
+}
+
+// Elimina una reserva de SharePoint
+async function deleteReservation(itemId) {
+    try {
+        if (!graphAccessToken) return false;
+
+        const siteResponse = await fetch(`https://graph.microsoft.com/v1.0/sites/${spConfig.siteUrl}:${spConfig.sitePath}`, {
+            headers: { 'Authorization': `Bearer ${graphAccessToken}` }
+        });
+        if (!siteResponse.ok) return false;
+        const siteData = await siteResponse.json();
+        const siteId = siteData.id;
+
+        const deleteEndpoint = `https://graph.microsoft.com/v1.0/sites/${siteId}/lists/${selectedMaquina.value}/items/${itemId}`;
+        const response = await fetch(deleteEndpoint, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${graphAccessToken}` }
+        });
+
+        return response.ok;
+    } catch (error) {
+        console.error("Error al eliminar reserva en conflicto:", error);
+        return false;
+    }
+}
+
+// Muestra la notificación en la parte superior
+function showNotification(message) {
+    let banner = document.getElementById('notification-banner');
+    if (!banner) {
+        banner = document.createElement('div');
+        banner.id = 'notification-banner';
+        banner.className = 'notification-banner';
+        const header = document.querySelector('.glass-header');
+        if (header) {
+            header.after(banner);
+        } else {
+            document.body.prepend(banner);
+        }
+    }
+
+    banner.innerHTML = `
+        <span><i class="fa-solid fa-triangle-exclamation"></i> ${message}</span>
+        <button onclick="this.parentElement.remove()" class="icon-btn" style="color: white; margin-left: 1rem; cursor: pointer; background: transparent; border: none;"><i class="fa-solid fa-xmark"></i></button>
+    `;
+    banner.classList.remove('hidden');
+
+    // Auto-eliminar después de 10 segundos
+    setTimeout(() => {
+        if (banner && banner.parentElement) banner.remove();
+    }, 10000);
+}
+
+// Maneja y resuelve los conflictos eliminando la reserva más nueva
+async function handleConflicts(conflicts) {
+    const { r1, r2 } = conflicts[0];
+    const id1 = parseInt(r1.id) || 0;
+    const id2 = parseInt(r2.id) || 0;
+
+    const older = id1 < id2 ? r1 : r2;
+    const newer = id1 < id2 ? r2 : r1;
+
+    const startDateTime = new Date(newer.start);
+    const startStr = startDateTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const dateStr = startDateTime.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
+
+    showNotification(`¡Conflicto detectado! La reserva de "${newer.department}" del ${dateStr} a las ${startStr} se solapaba con una reserva anterior de "${older.department}". Ha sido auto-cancelada automáticamente.`);
+
+    // Eliminar la reserva más reciente
+    const success = await deleteReservation(newer.id);
+    if (success) {
+        // Recargar las reservas
+        await loadReservations();
+    } else {
+        // Si no se puede borrar, renderizar el timeline actual para no buclar
+        renderTimeline();
+    }
+}
+
 function initDatePicker() {
     const today = new Date();
     datePicker.value = today.toISOString().split('T')[0];
@@ -501,6 +601,13 @@ async function loadReservations() {
             const rDate = new Date(r.start).toISOString().split('T')[0];
             return weekDateStrings.includes(rDate);
         });
+
+        // Buscar y resolver conflictos de solapamiento
+        const conflicts = findConflicts(reservations);
+        if (conflicts.length > 0) {
+            await handleConflicts(conflicts);
+            return;
+        }
 
         renderTimeline();
     } catch (error) {
