@@ -94,21 +94,6 @@ const mapDptoColor = new Map();
 
 // Initialization
 window.onload = () => {
-    /*
-    // Inicializar MSAL solo si no estamos en Mock Mode estricto o si hay un ClientID
-    if (msalConfig.auth.clientId !== "TU_CLIENT_ID_AQUI") {
-        myMSALObj = new msal.PublicClientApplication(msalConfig);
-        checkAuthStatus();
-    } else if (MOCK_MODE) {
-        // Simular login para pruebas de UI
-        showLoggedInView("Usuario de Prueba (Modo Mock)");
-        initDatePicker();
-        loadReservations();
-    } else {
-        alert("Por favor, configura el clientId en app.js para usar la autenticación real.");
-    }
-    */
-
     myMSALObj = new msal.PublicClientApplication(msalConfig);
     checkAuthStatus();
 
@@ -271,7 +256,7 @@ function updateDateDisplay() {
     const monday = getStartOfWeek(currentDate);
     const sunday = new Date(monday);
     sunday.setDate(monday.getDate() + 6);
-    
+
     let displayStr = "";
     if (monday.getMonth() === sunday.getMonth()) {
         displayStr = `Semana del ${monday.getDate()} al ${sunday.getDate()} de ${monday.toLocaleDateString('es-ES', { month: 'long' })} de ${monday.getFullYear()}`;
@@ -280,21 +265,26 @@ function updateDateDisplay() {
     } else {
         displayStr = `Semana del ${monday.getDate()} de ${monday.toLocaleDateString('es-ES', { month: 'long' })} de ${monday.getFullYear()} al ${sunday.getDate()} de ${sunday.toLocaleDateString('es-ES', { month: 'long' })} de ${sunday.getFullYear()}`;
     }
-    
+
     currentDateDisplay.textContent = displayStr;
 }
 
-// Asigna un color al dpto indicado
+// Asigna un color al dpto indicado de forma directa
 function getDeptColorClass(deptName) {
     /*
     const hash = deptName.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
     const colorIndex = (hash % 5) + 1;
     return `dept-color-${colorIndex}`;
     */
+    // que coñ... es una funcion arrow? desenrrollándolo aquí abajo:
+    // let hash = 0;
+    // for (let i = 0; i < deptName.length; i++) {
+    //     hash += deptName.charCodeAt(i);
+    // }
     //const dpto = selectedDepartamento.value; // 0 1 2 3 4
     let dpto;
 
-    switch (deptName) {
+    switch (deptName.toLowerCase()) {
         case "iluminacion":
             dpto = 0;
             break;
@@ -325,7 +315,7 @@ function renderTimeline() {
     timeline.innerHTML = '';
 
     const weekDates = getWeekDates(currentDate);
-    const startHour = 8;
+    const startHour = 6;
     const endHour = 20;
 
     const todayStr = new Date().toISOString().split('T')[0];

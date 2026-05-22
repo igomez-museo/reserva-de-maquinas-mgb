@@ -33,10 +33,10 @@
                         <select name="Departamentos" id="departamentos">
                             <!-- el color se obtiene desde el string con un switch más adelante -->
                             <option value="iluminacion">Iluminaci&oacute;n</option>
+                            <option value="limpieza">Limpieza</option>
                             <option value="mantenimiento">Mantenimiento</option>
-                            <option value="audiovisuales">Audiovisuales</option>
+                            <option value="arte">Arte</option>
                             <option value="seguridad">Seguridad</option>
-                            <option value="informatica">Inform&aacute;tica</option>
                         </select>
                     </h1>
                 </div>
@@ -59,11 +59,17 @@
                 <select name="maquinas" id="maquinas">
                     <option value="JLG 45 Mantenimiento">JLG 45 Mantenimiento</option>
                     <option value="JLG Boom iluminación">JLG BOOM iluminaci&oacute;n</option>
+                    <option value="Tijera 1 Iluminación">Tijera 1 Iluminaci&oacute;n</option>
+                    <option value="Tijera 2 Arte">Tijera 2 Arte</option>
+                    <option value="Tijera 3 Arte">Tijera 3 Arte</option>
+                    <option value="Juanita">Juanita</option>
                 </select>
                 <div class="date-selector">
-                    <button id="btn-prev-day" class="icon-btn" title="Semana anterior"><i class="fa-solid fa-chevron-left"></i></button>
+                    <button id="btn-prev-day" class="icon-btn" title="Semana anterior"><i
+                            class="fa-solid fa-chevron-left"></i></button>
                     <input type="date" id="date-picker" class="date-input">
-                    <button id="btn-next-day" class="icon-btn" title="Semana siguiente"><i class="fa-solid fa-chevron-right"></i></button>
+                    <button id="btn-next-day" class="icon-btn" title="Semana siguiente"><i
+                            class="fa-solid fa-chevron-right"></i></button>
                 </div>
                 <div class="actions">
                     <button id="btn-refresh" class="btn btn-icon" title="Actualizar">
@@ -108,11 +114,11 @@
                     <div class="form-row">
                         <div class="form-group">
                             <label for="input-start">Hora Inicio</label>
-                            <input type="time" id="input-start" required>
+                            <input type="time" id="input-start" min="08:00" max="20:00" step="3600" required>
                         </div>
                         <div class="form-group">
                             <label for="input-end">Hora Fin</label>
-                            <input type="time" id="input-end" required>
+                            <input type="time" id="input-end" min="08:00" max="20:00" step="3600" required>
                         </div>
                     </div>
                     <div class="form-group error-message hidden" id="form-error">
