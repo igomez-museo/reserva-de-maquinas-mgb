@@ -362,7 +362,7 @@ function getDeptColorClass(deptName) {
     // }
     //const dpto = selectedDepartamento.value; // 0 1 2 3 4
     let dpto;
-
+    // guarro pero funciona
     switch (deptName.toLowerCase()) {
         case "iluminacion mantenimiento":
             dpto = 0;
