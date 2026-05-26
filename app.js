@@ -90,7 +90,7 @@ const inputEnd = document.getElementById('input-end');
 const formError = document.getElementById('form-error');
 
 // Ign
-const mapDptoColor = new Map();
+//const mapDptoColor = new Map();
 
 // Initialization
 window.onload = () => {
@@ -104,11 +104,13 @@ window.onload = () => {
 
 // inicializo aquí mis cosas auxiliares
 function setupIgn() {
-    mapDptoColor.set("Iluminacion", "#ff0000");
-    mapDptoColor.set("Mantenimiento", "#00ff00");
-    mapDptoColor.set("Audiovisuales", "#0000ff");
-    mapDptoColor.set("Seguridad", "#ff00ff");
-    mapDptoColor.set("Informatica", "#00ffff");
+    // mapDptoColor.set("Iluminacion Mantenimiento", "#ff0000");
+    // mapDptoColor.set("Iluminacion Exposiciones", "#009751ff");
+    // mapDptoColor.set("Mantenimiento", "#0000ff");
+    // mapDptoColor.set("Seguridad", "#ff00ff");
+    // mapDptoColor.set("Limpieza", "#00ffff");
+    // mapDptoColor.set("Montaje Exposiciones", "#ffa600ff");
+    // mapDptoColor.set("Audiovisuales Exposiciones", "#cefc00ff");
 }
 
 function setupEventListeners() {
@@ -385,23 +387,29 @@ function getDeptColorClass(deptName) {
     let dpto;
 
     switch (deptName.toLowerCase()) {
-        case "iluminacion":
+        case "iluminacion mantenimiento":
             dpto = 0;
             break;
-        case "mantenimiento":
+        case "iluminacion exposiciones":
             dpto = 1;
             break;
-        case "audiovisuales":
+        case "mantenimiento":
             dpto = 2;
             break;
         case "seguridad":
             dpto = 3;
             break;
-        case "informatica":
+        case "limpieza":
             dpto = 4;
             break;
-        default:
+        case "montaje exposiciones":
             dpto = 5;
+            break;
+        case "audiovisuales exposiciones":
+            dpto = 6;
+            break;
+        default:
+            dpto = 99;
             break;
     }
 

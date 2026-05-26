@@ -512,7 +512,7 @@ input:focus {
 }
 
 .dept-color-2 {
-    background-color: rgba(178, 247, 50, 0.8) !important;
+    background-color: rgba(204, 255, 18, 0.8) !important;
 }
 
 .dept-color-3 {
@@ -524,11 +524,15 @@ input:focus {
 }
 
 .dept-color-5 {
-    background-color: rgba(255, 0, 255, 0.8) !important;
+    background-color: rgba(0, 100, 53, 0.8) !important;
 }
 
 .dept-color-6 {
-    background-color: rgba(194, 194, 194, 0.8) !important;
+    background-color: rgb(192, 5, 99) !important;
+}
+
+.dept-color-99 {
+    background-color: #ff00ffcc !important;
 }
 
 /* IGN */
@@ -577,6 +581,7 @@ select {
         transform: translateY(-10px);
         opacity: 0;
     }
+
     to {
         transform: translateY(0);
         opacity: 1;
