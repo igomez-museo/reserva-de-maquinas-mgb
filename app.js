@@ -29,12 +29,6 @@ const spConfig = {
 
 
 //#endregion   
-// ==========================================
-// No hay MODO MOCK (Simulación sin conexión a API)
-// Cambia a 'false' cuando configures los IDs reales.
-//const MOCK_MODE = true;
-// const MOCK_MODE = false;
-// ==========================================
 
 let myMSALObj;
 let graphAccessToken = null;
@@ -43,31 +37,16 @@ let reservations = [];
 let selectedReservationDate = "";
 
 // DOM Elements
+// -------------------------------------------------------------------
 // Ig: 
+// -------------------------------------------------------------------
 let selectedMaquina = document.getElementById('maquinas');
 selectedMaquina.addEventListener('change', (e) => {
     currentList = e.target.value;
     loadReservations();
 });
-
 let selectedDepartamento = document.getElementById('departamentos')
-
-/*
-mas
-
-// de aqui cogería el value
-<select id="ddlViewBy">
-  <option value="1">test1</option>
-  <option value="2" selected="selected">test2</option>
-  <option value="3">test3</option>
-</select>
-Running this code:
-
-var e = document.getElementById("ddlViewBy");
-var value = e.value;
-var text = e.options[e.selectedIndex].text;
-
-*/
+// -------------------------------------------------------------------
 
 const btnLogin = document.getElementById('btn-login');
 const btnLogout = document.getElementById('btn-logout');
@@ -89,28 +68,51 @@ const inputStart = document.getElementById('input-start');
 const inputEnd = document.getElementById('input-end');
 const formError = document.getElementById('form-error');
 
-// Ign
-//const mapDptoColor = new Map();
-
-// Initialization
+// Initialization: intenta iniciar sesión lo primero
 window.onload = () => {
     myMSALObj = new msal.PublicClientApplication(msalConfig);
-    checkAuthStatus();
-
     setupEventListeners();
 
-    //alert(selectedMaquina.text);
+    // Las versiones anteriores usaban un pop-up para iniciar sesión y por tanto el usuario debía pulsar el botón.
+    // ahora utiliza una redirección y así se puede ejecutar automáticamente lo primero de todo.
+    myMSALObj.handleRedirectPromise()
+        .then(response => {
+            if (response !== null) {
+                // Acabamos de volver de un inicio de sesión por redirección exitoso
+                showLoggedInView(response.account.username);
+                graphAccessToken = response.accessToken;
+                initDatePicker();
+                loadReservations();
+
+                // Iniciar autorefresco
+                if (!window.refreshInterval) {
+                    window.refreshInterval = setInterval(loadReservations, 60000);
+                }
+            } else {
+                // Carga normal de la página. Comprobar si ya hay una cuenta en caché.
+                const currentAccounts = myMSALObj.getAllAccounts();
+                if (currentAccounts.length > 0) {
+                    showLoggedInView(currentAccounts[0].username);
+                    getToken();
+                } else {
+                    // Si el usuario no ha cerrado sesión explícitamente, iniciar sesión automáticamente
+                    if (sessionStorage.getItem('user_logged_out') !== 'true') {
+                        signIn();
+                    } else {
+                        showLoggedOutView();
+                    }
+                }
+            }
+        })
+        .catch(error => {
+            console.error("Error al procesar la redirección de MSAL:", error);
+            showLoggedOutView();
+        });
 };
 
 // inicializo aquí mis cosas auxiliares
 function setupIgn() {
     // mapDptoColor.set("Iluminacion Mantenimiento", "#ff0000");
-    // mapDptoColor.set("Iluminacion Exposiciones", "#009751ff");
-    // mapDptoColor.set("Mantenimiento", "#0000ff");
-    // mapDptoColor.set("Seguridad", "#ff00ff");
-    // mapDptoColor.set("Limpieza", "#00ffff");
-    // mapDptoColor.set("Montaje Exposiciones", "#ffa600ff");
-    // mapDptoColor.set("Audiovisuales Exposiciones", "#cefc00ff");
 }
 
 function setupEventListeners() {
@@ -135,55 +137,25 @@ function setupEventListeners() {
 // ==========================================
 //#region AUTHENTICATION (MSAL)
 // ==========================================
-function checkAuthStatus() {
-    const currentAccounts = myMSALObj.getAllAccounts();
-    if (currentAccounts.length > 0) {
-        showLoggedInView(currentAccounts[0].username);
-        getToken();
-    }
-}
-
 function signIn() {
-    /*
-    if (MOCK_MODE && msalConfig.auth.clientId === "TU_CLIENT_ID_AQUI") {
-        showLoggedInView("Usuario de Prueba (Modo Mock)");
-        initDatePicker();
-        loadReservations();
-        return;
-    }
-    */
-    myMSALObj.loginPopup(loginRequest)
-        .then(response => {
-            showLoggedInView(response.account.username);
-            graphAccessToken = response.accessToken;
-            initDatePicker();
-            loadReservations();
+    // Limpiar indicador de logout manual para permitir el flujo
+    sessionStorage.removeItem('user_logged_out');
 
-            // Iniciar autorefresco
-            if (!window.refreshInterval) {
-                window.refreshInterval = setInterval(loadReservations, 60000);
-            }
-        })
+    myMSALObj.loginRedirect(loginRequest)
         .catch(error => {
-            console.error(error);
+            console.error("Error al iniciar redirección de login:", error);
             alert("Error de autenticación: " + error.message);
         });
 }
 
 function signOut() {
-    /*
-    if (MOCK_MODE && msalConfig.auth.clientId === "TU_CLIENT_ID_AQUI") {
-        userInfo.classList.add('hidden');
-        btnLogout.classList.add('hidden');
-        btnLogin.classList.remove('hidden');
-        timeline.innerHTML = '<div class="loading-spinner">Inicia sesión para ver las reservas.</div>';
-        return;
-    }
-    */
+    // Registrar que el usuario ha querido cerrar sesión para evitar bucles de auto-login
+    sessionStorage.setItem('user_logged_out', 'true');
+
     const logoutRequest = {
         account: myMSALObj.getAccountByUsername(userInfo.textContent)
     };
-    myMSALObj.logoutPopup(logoutRequest);
+    myMSALObj.logoutRedirect(logoutRequest);
 }
 
 function getToken() {
@@ -201,12 +173,8 @@ function getToken() {
         .catch(error => {
             console.error("Silent token failed:", error);
             if (error instanceof msal.InteractionRequiredAuthError || error.name === "InteractionRequiredAuthError" || error.errorCode === "consent_required") {
-                myMSALObj.acquireTokenPopup(loginRequest)
-                    .then(response => {
-                        graphAccessToken = response.accessToken;
-                        initDatePicker();
-                        loadReservations();
-                    }).catch(err => console.error("Popup token failed:", err));
+                // Si falla el token silencioso y requiere interacción, redirigimos
+                myMSALObj.acquireTokenRedirect(loginRequest);
             }
         });
 }
@@ -215,7 +183,16 @@ function showLoggedInView(username) {
     userInfo.textContent = username;
     userInfo.classList.remove('hidden');
     btnLogout.classList.remove('hidden');
-    //btnLogin.classList.add('hidden');
+    // no oculto el boton de login porque todavía si se recarga la página se pierde la sesión y me obligaría a hacer signout antes de repetir el signin...
+    //btnLogin.classList.add('hidden'); 
+}
+
+function showLoggedOutView() {
+    userInfo.textContent = "";
+    userInfo.classList.add('hidden');
+    btnLogout.classList.add('hidden');
+    btnLogin.classList.remove('hidden'); // Mostrar el botón para permitir inicio de sesión manual
+    timeline.innerHTML = '<div class="loading-spinner">Inicia sesión para ver las reservas.</div>';
 }
 //#endregion
 // ==========================================

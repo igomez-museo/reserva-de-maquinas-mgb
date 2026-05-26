@@ -30,8 +30,10 @@
                 <div class="title-area">
                     <i class="fa-solid fa-truck-ramp-box icon-machine"></i>
                     <h1>Selecciona departamento y m&aacute;quina:
+                        <!-- Nombre de los departamentos que pueden reservar máquinas. Simplemente es texto, no se comprueba nada y cualquiera puede "reservar" en nombre de otro dpto -->
+                        <!-- Aunque en Sharepoint sí que se verá el usuario que ha creado la reserva -->
                         <select name="Departamentos" id="departamentos">
-                            <!-- el color se obtiene desde el option value con un switch más adelante -->
+                            <!-- el color se obtiene desde el option value con un switch más adelante, en base al option -->
                             <option value="Iluminacion Mantenimiento">Iluminaci&oacute;n Mantenimiento</option>
                             <option value="Iluminacion Exposiciones">Iluminaci&oacute;n Exposiciones</option>
                             <option value="Mantenimiento">Mantenimiento</option>
@@ -58,15 +60,8 @@
         <main class="main-content">
             <!-- Toolbar -->
             <section class="toolbar glass-panel">
+                <!-- Editar aquí la lista de máquinas. Cada option tiene que llamarse EXACTAMENTE como la Lista de Sharepoint correspondiente -->
                 <select name="maquinas" id="maquinas">
-                    <!-- Opa voy a hase un corra
-                    <option value="JLG 45 Mantenimiento">JLG 45 Mantenimiento</option>
-                    <option value="JLG Boom iluminación">JLG BOOM iluminaci&oacute;n</option>
-                    <option value="Tijera 1 Iluminación">Tijera 1 Iluminaci&oacute;n</option>
-                    <option value="Tijera 2 Arte">Tijera 2 Arte</option>
-                    <option value="Tijera 3 Arte">Tijera 3 Arte</option>
-                    <option value="Juanita">Juanita</option>
-                    -->
                     <option value="Boom Mantenimiento">Boom | Mantenimiento</option>
                     <option value="JLG-45 Mantenimiento">JLG-45 | Mantenimiento</option>
                     <option value="Haulotte 1 Iluminacion">Haulotte 1 | Iluminaci&oacute;n</option>
