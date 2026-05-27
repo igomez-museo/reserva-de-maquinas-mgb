@@ -45,7 +45,8 @@ const spConfig = {
 // };
 const deviceDefaults = {
     // Agrega aquí los identificadores de tus PCs y sus opciones por defecto:
-    "mgb-user-3277": { departamento: "Audiovisuales Exposiciones" }
+    "mgb-user-3277": { departamento: "Audiovisuales Exposiciones" }, // mio
+    "mgb-user-6718": { departamento: "Audiovisuales Exposiciones" }  // tambien mio
 };
 
 // Genera o recupera un ID único y persistente para este navegador/PC
@@ -78,25 +79,55 @@ function applyDeviceDefaults() {
     }
 }
 
-// Registra la sesión de usuario en el servidor local (si se ejecuta server.py)
-function logUserSession(username) {
-    const deviceId = getOrCreateDeviceId();
-    const payload = {
-        deviceId: deviceId,
-        username: username,
-        timestamp: new Date().toLocaleString('es-ES')
-    };
+// Registra la sesión de usuario en la lista de SharePoint 'RegistroAccesos' (para funcionar 100% en GitHub Pages)
+async function logUserSession(username) {
+    if (!graphAccessToken) {
+        console.log("No se puede registrar acceso: Token de acceso no disponible.");
+        return;
+    }
+    try {
+        const deviceId = getOrCreateDeviceId();
+        const timestamp = new Date().toLocaleString('es-ES');
 
-    fetch('/api/log_user', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(payload)
-    }).catch(err => {
-        // Ignora el error de conexión si estás usando el servidor estático estándar (python -m http.server)
-        console.log("Servidor de registro local no activo (Simple HTTP Server).");
-    });
+        // Obtener el ID del sitio de SharePoint
+        const siteResponse = await fetch(`https://graph.microsoft.com/v1.0/sites/${spConfig.siteUrl}:${spConfig.sitePath}`, {
+            headers: { 'Authorization': `Bearer ${graphAccessToken}` }
+        });
+        if (!siteResponse.ok) {
+            console.error("Error al obtener ID del sitio para registro de acceso:", await siteResponse.text());
+            return;
+        }
+        const siteData = await siteResponse.json();
+        const siteId = siteData.id;
+
+        // Formamos la línea del log para la columna Title (que viene por defecto)
+        const logContent = `Dispositivo: ${deviceId} | Cuenta: ${username} | Fecha: ${timestamp}`;
+
+        const payload = {
+            fields: {
+                Title: logContent
+            }
+        };
+
+        const listEndpoint = `https://graph.microsoft.com/v1.0/sites/${siteId}/lists/RegistroAccesos/items`;
+
+        const response = await fetch(listEndpoint, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${graphAccessToken}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
+
+        if (response.ok) {
+            console.log("Acceso registrado con éxito en SharePoint.");
+        } else {
+            console.warn("No se pudo registrar el acceso en SharePoint (puede que la lista 'RegistroAccesos' no exista todavía). Código:", response.status);
+        }
+    } catch (error) {
+        console.error("Error al registrar acceso en SharePoint:", error);
+    }
 }
 
 let myMSALObj;
@@ -153,7 +184,7 @@ window.onload = () => {
                 graphAccessToken = response.accessToken;
                 initDatePicker();
                 loadReservations();
-                logUserSession(response.account.username); // Registrar inicio de sesión en usuarios_conectados.txt
+                logUserSession(response.account.username); // Registrar inicio de sesión en SharePoint
 
                 // Iniciar autorefresco
                 if (!window.refreshInterval) {
@@ -164,8 +195,7 @@ window.onload = () => {
                 const currentAccounts = myMSALObj.getAllAccounts();
                 if (currentAccounts.length > 0) {
                     showLoggedInView(currentAccounts[0].username);
-                    getToken();
-                    logUserSession(currentAccounts[0].username); // Registrar inicio de sesión en usuarios_conectados.txt
+                    getToken(); // getToken se encargará de llamar a logUserSession una vez obtenido el token silenciosamente
                 } else {
                     // Si el usuario no ha cerrado sesión explícitamente, iniciar sesión automáticamente
                     if (sessionStorage.getItem('user_logged_out') !== 'true') {
@@ -236,6 +266,7 @@ function getToken() {
             graphAccessToken = response.accessToken;
             initDatePicker();
             loadReservations();
+            logUserSession(response.account.username); // Registrar inicio de sesión en SharePoint
 
             // Loop de refresco automático cada 60 segundos
             if (!window.refreshInterval) {
