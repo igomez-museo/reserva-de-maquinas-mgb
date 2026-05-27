@@ -30,6 +30,75 @@ const spConfig = {
 
 //#endregion   
 
+// ==========================================
+// CONFIGURACIÓN DE PRESELECCIÓN POR DISPOSITIVO (PERSONALIZACIÓN)
+// ==========================================
+// Puedes asociar un ID de dispositivo (que verás en la barra superior de la web o en el log)
+// con un departamento y una máquina por defecto. Esto es útil para preseleccionar
+// opciones en equipos específicos (por ejemplo, PCs de departamentos concretos).
+//
+// Los valores de 'departamento' y 'maquina' deben coincidir EXACTAMENTE con los atributos 'value' en el HTML.
+// Ejemplo de configuración:
+// const deviceDefaults = {
+//     "mgb-user-1234": { departamento: "Mantenimiento", maquina: "JLG-45 Mantenimiento" },
+//     "mgb-user-5678": { departamento: "Limpieza", maquina: "Boom Mantenimiento" }
+// };
+const deviceDefaults = {
+    // Agrega aquí los identificadores de tus PCs y sus opciones por defecto:
+    "mgb-user-3277": { departamento: "Audiovisuales Exposiciones" }
+};
+
+// Genera o recupera un ID único y persistente para este navegador/PC
+function getOrCreateDeviceId() {
+    let deviceId = localStorage.getItem('mgb_device_id');
+    if (!deviceId) {
+        const randomNum = Math.floor(1000 + Math.random() * 9000);
+        deviceId = `mgb-user-${randomNum}`;
+        localStorage.setItem('mgb_device_id', deviceId);
+    }
+    return deviceId;
+}
+
+// Aplica la preselección configurada para este dispositivo
+function applyDeviceDefaults() {
+    const deviceId = getOrCreateDeviceId();
+    const defaults = deviceDefaults[deviceId];
+    if (defaults) {
+        if (defaults.departamento) {
+            const selectDept = document.getElementById('departamentos');
+            if (selectDept) selectDept.value = defaults.departamento;
+        }
+        /*
+
+        if (defaults.maquina) {
+            const selectMaq = document.getElementById('maquinas');
+            if (selectMaq) selectMaq.value = defaults.maquina;
+        }
+        */
+    }
+}
+
+// Registra la sesión de usuario en el servidor local (si se ejecuta server.py)
+function logUserSession(username) {
+    const deviceId = getOrCreateDeviceId();
+    const payload = {
+        deviceId: deviceId,
+        username: username,
+        timestamp: new Date().toLocaleString('es-ES')
+    };
+
+    fetch('/api/log_user', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+    }).catch(err => {
+        // Ignora el error de conexión si estás usando el servidor estático estándar (python -m http.server)
+        console.log("Servidor de registro local no activo (Simple HTTP Server).");
+    });
+}
+
 let myMSALObj;
 let graphAccessToken = null;
 let currentDate = new Date();
@@ -72,6 +141,7 @@ const formError = document.getElementById('form-error');
 window.onload = () => {
     myMSALObj = new msal.PublicClientApplication(msalConfig);
     setupEventListeners();
+    applyDeviceDefaults(); // Aplicar preselección configurada para este dispositivo
 
     // Las versiones anteriores usaban un pop-up para iniciar sesión y por tanto el usuario debía pulsar el botón.
     // ahora utiliza una redirección y así se puede ejecutar automáticamente lo primero de todo.
@@ -83,6 +153,7 @@ window.onload = () => {
                 graphAccessToken = response.accessToken;
                 initDatePicker();
                 loadReservations();
+                logUserSession(response.account.username); // Registrar inicio de sesión en usuarios_conectados.txt
 
                 // Iniciar autorefresco
                 if (!window.refreshInterval) {
@@ -94,6 +165,7 @@ window.onload = () => {
                 if (currentAccounts.length > 0) {
                     showLoggedInView(currentAccounts[0].username);
                     getToken();
+                    logUserSession(currentAccounts[0].username); // Registrar inicio de sesión en usuarios_conectados.txt
                 } else {
                     // Si el usuario no ha cerrado sesión explícitamente, iniciar sesión automáticamente
                     if (sessionStorage.getItem('user_logged_out') !== 'true') {
@@ -180,16 +252,18 @@ function getToken() {
 }
 
 function showLoggedInView(username) {
-    userInfo.textContent = username;
+    const deviceId = getOrCreateDeviceId();
+    userInfo.innerHTML = `<i class="fa-solid fa-user"></i> ${username} <span style="font-size: 0.85em; opacity: 0.75; margin-left: 8px;">(ID: ${deviceId})</span>`;
     userInfo.classList.remove('hidden');
     btnLogout.classList.remove('hidden');
-    // no oculto el boton de login porque todavía si se recarga la página se pierde la sesión y me obligaría a hacer signout antes de repetir el signin...
-    //btnLogin.classList.add('hidden'); 
+    btnLogin.classList.add('hidden'); // Ocultar botón de inicio de sesión ya que está correctamente autenticado
 }
 
 function showLoggedOutView() {
-    userInfo.textContent = "";
-    userInfo.classList.add('hidden');
+    const deviceId = getOrCreateDeviceId();
+    // Mostramos el ID del dispositivo de forma visible para facilitar la configuración manual al administrador
+    userInfo.innerHTML = `<span style="font-size: 0.9em; opacity: 0.75; margin-right: 12px;">ID Dispositivo: <b>${deviceId}</b></span>`;
+    userInfo.classList.remove('hidden');
     btnLogout.classList.add('hidden');
     btnLogin.classList.remove('hidden'); // Mostrar el botón para permitir inicio de sesión manual
     timeline.innerHTML = '<div class="loading-spinner">Inicia sesión para ver las reservas.</div>';
